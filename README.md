@@ -1,4 +1,7 @@
 # classroom-notes.md
+```bash
+personnal notes (formatted using an llm)
+```
 
 # Reconnect and Update Hermes on H01D
 
