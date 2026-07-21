@@ -1,4 +1,4 @@
-# classroom-notes.md
+# tutorial.md
 ```bash
 personnal notes (formatted using an llm)
 ```
