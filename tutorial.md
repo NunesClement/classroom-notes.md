@@ -1,312 +1,229 @@
-# tutorial.md
+# SAGE development notes
+
+These notes use placeholders so they are safe to share. Replace values such as
+`your-node-id` locally; do not commit usernames, tokens, passwords, private
+keys, or private file paths.
+
+## 1. Local Python setup with `uv`
+
+Develop and test the application on your computer first. Do not install Python
+packages directly on a SAGE node.
+
+Check whether `uv` is already installed:
+
 ```bash
-personnal notes (formatted using an llm)
+uv --version
 ```
 
-# Reconnect and Update Hermes on H01D
-
-## 1. Reconnect to the node
+If it is missing on macOS:
 
 ```bash
-ssh waggle-dev-node-H01D
+brew install uv
 ```
 
----
+For a new Python project:
 
-## 2. Remove any existing Hermes tmux session
+```bash
+uv init
+uv add package-name
+uv run python main.py
+```
 
-List active tmux sessions:
+For an existing project that already contains `pyproject.toml` and `uv.lock`:
+
+```bash
+uv sync
+uv run python main.py
+```
+
+Useful commands:
+
+```bash
+uv add package-name
+uv remove package-name
+uv run python script.py
+```
+
+Official reference: [Installing uv](https://docs.astral.sh/uv/getting-started/installation/)
+
+## 2. SAGE edge-app workflow
+
+A SAGE edge app contains its code, dependencies, and models, packaged so that
+it can be scheduled on Waggle nodes.
+
+Use this order:
+
+1. Develop and test the Python code locally.
+2. Add the edge-app files, including `Dockerfile` and `sage.yaml`.
+3. Build and test the packaged app on a development node.
+4. Publish it to the Edge Code Repository (ECR).
+5. Schedule it on a node and inspect the published results.
+
+Do not run an app or install packages directly on a node. Use its Docker
+container or the supported `pluginctl` workflow.
+
+References:
+
+- [Introduction to edge apps](https://sagecontinuum.org/docs/tutorials/edge-apps/intro-to-edge-apps)
+- [Creating an edge app](https://sagecontinuum.org/docs/tutorials/edge-apps/creating-an-edge-app)
+- [Developer quick reference](https://sagecontinuum.org/docs/reference-guides/dev-quick-reference)
+
+## 3. Connect to a SAGE development node
+
+### Prerequisite
+
+Your SAGE account must have access to the target node, and the SAGE SSH setup
+must already be installed on your computer. Access is managed in the
+[SAGE portal](https://portal.sagecontinuum.org/account/access).
+
+Set the node identifier for the current terminal session:
+
+```bash
+SAGE_NODE="your-node-id"
+```
+
+Check that the node is reachable:
+
+```bash
+ssh "waggle-dev-node-${SAGE_NODE}" hostname
+```
+
+Open an interactive shell:
+
+```bash
+ssh "waggle-dev-node-${SAGE_NODE}"
+```
+
+Run one command and disconnect:
+
+```bash
+ssh "waggle-dev-node-${SAGE_NODE}" tmux ls
+```
+
+Your SSH key passphrase may be requested. SSH handles it; never store the
+passphrase in this repository.
+
+## 4. Reconnect and update Hermes
+
+Run these commands after connecting to the development node.
+
+### Stop an old session
+
+List the `tmux` sessions:
 
 ```bash
 tmux ls
 ```
 
-If a session named `hermes` exists, stop it:
+If a session named `hermes` exists:
 
 ```bash
 tmux kill-session -t hermes
 ```
 
----
-
-## 3. Back up the current configuration
+### Back up and update the profile
 
 ```bash
 cp ~/.hermes/profiles/sage/config.yaml \
    ~/.hermes/profiles/sage/config.yaml.before-update
-```
 
----
-
-## 4. Update the Sage profile
-
-```bash
 hermes profile update sage --force-config
 ```
 
-> **Note**
->
-> The `.env` file and the NVIDIA API key should remain unchanged.
-> However, `--force-config` may reset the selected model to the profile default.
+The update may reset the selected model. It should not require copying an API
+key into this repository.
 
----
-
-## 5. Verify the installation
-
-Display profile information:
+### Verify Hermes
 
 ```bash
 hermes profile info sage
-```
-
-Run diagnostics:
-
-```bash
 hermes -p sage doctor
-```
-
-List installed skills:
-
-```bash
 hermes -p sage skills list
-```
-
----
-
-## 6. Verify the active model
-
-Check the configured model:
-
-```bash
 hermes -p sage config get model
 ```
 
-If the output is **not**:
-
-```
-z-ai/glm-5.2
-```
-
-reconfigure the model:
+If the model is incorrect, select the intended provider and model
+interactively:
 
 ```bash
 hermes -p sage model
 ```
 
-Choose:
-
-1. **NVIDIA NIM**
-2. **Keep existing API key**
-3. **z-ai/glm-5.2**
-
----
-
-## 7. Restart Hermes inside tmux
-
-Create a new tmux session:
+### Restart Hermes in `tmux`
 
 ```bash
 tmux new -s hermes
-```
-
-Start Hermes:
-
-```bash
 hermes -p sage
 ```
 
-Detach while leaving Hermes running:
+To leave Hermes running, press `Ctrl-B`, release the keys, and then press `d`.
 
-- `Ctrl-B`
-- release
-- `d`
-
----
-
-# Running Hermes from outside tmux
-
-Example command:
+From outside `tmux`, a one-off prompt can be run with:
 
 ```bash
-hermes -p sage -s sage-waggle -z \
-  "Explain in five bullets how data moves from a Sage node to Beehive."
+hermes -p sage -s sage-waggle -z "Your prompt"
 ```
 
-# API & code
+## 5. Query SAGE data
 
-print(df.head())
-```
+Use the Python client for repeatable analysis and `curl` for quick terminal
+checks. Both use the same SAGE query service.
 
-Run the repo examples:
+### Quick HTTP query
 
-```bash
-uv run python temperature.py
-uv run python avg-temp.py
-uv run python avg-temp-5-mn.py
-uv run python urls.py
-```
-
-What they do:
-
-- `temperature.py`: query one node;
-- `avg-temp.py`: average one hour of temperature data;
-- `avg-temp-5-mn.py`: show recent temperatures across nodes;
-- `urls.py`: find and download the latest five images from `W06C`.
-
-`urls.py` reads `NAME` and `SAGE_TOKEN` from `.env`.
-Do not put their values in the script.
-
-### Way 2 — HTTP with curl
-
-Query image-sampler data directly:
+Replace `your-node-id` and the task pattern:
 
 ```bash
 curl https://data.sagecontinuum.org/api/v1/query \
   -d '{
-    "start":"-1h",
-    "filter":{
-      "vsn":"W06C",
-      "task":"imagesampler-.*"
+    "start": "-1h",
+    "filter": {
+      "vsn": "your-node-id",
+      "task": "your-task-pattern"
     }
   }'
 ```
 
-Get the latest image URL:
+### Protected downloads
+
+Keep credentials outside source files and load them from the environment only
+when needed:
 
 ```bash
-URL=$(curl -s \
-  https://data.sagecontinuum.org/api/v1/query \
-  -d '{
-    "start":"-1h",
-    "filter":{
-      "vsn":"W06C",
-      "task":"imagesampler-mobotix"
-    }
-  }' \
-  | jq -r '.value' \
-  | tail -1)
+curl -L -u "$SAGE_USERNAME:$SAGE_TOKEN" "$URL" -o output-file
 ```
 
-Check the URL, then download the file:
+Never print these variables or commit the `.env` file that defines them.
+
+## 6. Store a secret in macOS Keychain
+
+Keychain stores a secret without putting it in a script, configuration file,
+or shell history.
+
+Choose a non-sensitive service label:
 
 ```bash
-echo "$URL"
-curl -L "$URL" -o ~/Downloads/picture.jpg
-open ~/Downloads/picture.jpg
+KEYCHAIN_SERVICE="sage-api"
 ```
 
-`open` is for macOS. On Linux, use `xdg-open` instead.
-
-For a protected download, use the credentials from the environment:
-
-```bash
-curl -L \
-  -u "$NAME:$SAGE_TOKEN" \
-  "$URL" \
-  -o ~/Downloads/picture.jpg
-```
-
-Get the latest audio URL and download it:
-
-```bash
-URL=$(curl -s \
-  https://data.sagecontinuum.org/api/v1/query \
-  -d '{
-    "start":"-24h",
-    "filter":{
-      "vsn":"W06C",
-      "name":"upload",
-      "task":".*audio.*"
-    }
-  }' \
-  | jq -r '.value' \
-  | tail -1)
-
-curl -L "$URL" -o ~/Downloads/audio.flac
-```
-
-## Which API way to use?
-
-Use the Python client for analysis or repeatable scripts. It turns the
-response into a pandas DataFrame, which makes numeric conversion,
-grouping, sorting, averaging, and multi-file downloads easier.
-
-Use `curl` for a fast terminal check or a shell script. It has no Python
-setup, shows the API response directly, and combines well with `jq`,
-`tail`, and other command-line tools.
-
-The Python client is not a separate data service. It sends the query to
-the same `/api/v1/query` endpoint, then parses the newline-delimited JSON
-response into a DataFrame.
-
-In short: use `curl` to inspect or fetch something quickly; use Python
-when the result needs processing, reuse, or error handling.
-
----
-
-# Stocker un mot de passe dans le Trousseau macOS
-
-Le Trousseau macOS (`Keychain`) permet de conserver des mots de passe et
-d'autres secrets de façon chiffrée, au lieu de les enregistrer en clair dans
-un script, un fichier de configuration ou une variable d'environnement
-persistante. macOS contrôle également quelles applications peuvent accéder à
-chaque entrée et peut demander une confirmation ou une authentification avant
-de révéler un secret.
-
-## Ajouter une entrée
-
-Pour créer une entrée nommée `test`, associée à l'utilisateur courant, et lui
-attribuer le mot de passe `1234` :
+Add or update the entry. The final `-w` requests the secret interactively:
 
 ```bash
 security add-generic-password \
   -a "$USER" \
-  -s "test" \
-  -w "1234" \
-  -U
-```
-
-L'option `-U` met à jour l'entrée si elle existe déjà. Sans cette option, la
-commande échoue lorsqu'une entrée portant le même nom est déjà présente.
-
-> **Attention**
->
-> Écrire `1234` directement dans la commande l'enregistre généralement dans
-> l'historique du terminal. La méthode recommandée consiste à demander le mot
-> de passe de manière interactive :
-
-```bash
-security add-generic-password \
-  -a "$USER" \
-  -s "test" \
+  -s "$KEYCHAIN_SERVICE" \
   -U \
   -w
 ```
 
-Saisir `1234` lorsque macOS le demande. Placer `-w` en dernière position, sans
-valeur, déclenche la saisie interactive et évite d'ajouter le mot de passe à
-l'historique du terminal.
-
-## Récupérer le mot de passe
+Retrieve it only when needed:
 
 ```bash
 security find-generic-password \
   -a "$USER" \
-  -s "test" \
+  -s "$KEYCHAIN_SERVICE" \
   -w
 ```
 
-L'option `-w` affiche uniquement le mot de passe. Cette sortie reste sensible :
-éviter de la copier dans des journaux, des captures d'écran ou des scripts qui
-l'enregistreraient en clair.
-
-## Pourquoi utiliser le Trousseau sur macOS ?
-
-- les secrets sont stockés dans un espace chiffré géré par macOS ;
-- les droits d'accès peuvent être limités par application ;
-- le Trousseau peut demander le mot de passe de session ou Touch ID avant
-  d'autoriser un accès ;
-- les scripts peuvent récupérer un secret au moment où ils en ont besoin, sans
-  l'intégrer directement à leur code ;
-- une entrée peut être mise à jour ou supprimée de manière centralisée sans
-  modifier chaque script qui l'utilise.
+The retrieved value is still sensitive. Do not copy it into logs, screenshots,
+source files, or committed shell configuration.

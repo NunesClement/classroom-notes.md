@@ -1,0 +1,15 @@
+# Local secrets
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+
+# Local Python files
+.venv/
+__pycache__/
+*.py[cod]
+
+# Local SAGE test output and captures
+test-run/
+snapshot.jpg
