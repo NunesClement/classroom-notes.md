@@ -241,3 +241,72 @@ response into a DataFrame.
 
 In short: use `curl` to inspect or fetch something quickly; use Python
 when the result needs processing, reuse, or error handling.
+
+---
+
+# Stocker un mot de passe dans le Trousseau macOS
+
+Le Trousseau macOS (`Keychain`) permet de conserver des mots de passe et
+d'autres secrets de façon chiffrée, au lieu de les enregistrer en clair dans
+un script, un fichier de configuration ou une variable d'environnement
+persistante. macOS contrôle également quelles applications peuvent accéder à
+chaque entrée et peut demander une confirmation ou une authentification avant
+de révéler un secret.
+
+## Ajouter une entrée
+
+Pour créer une entrée nommée `test`, associée à l'utilisateur courant, et lui
+attribuer le mot de passe `1234` :
+
+```bash
+security add-generic-password \
+  -a "$USER" \
+  -s "test" \
+  -w "1234" \
+  -U
+```
+
+L'option `-U` met à jour l'entrée si elle existe déjà. Sans cette option, la
+commande échoue lorsqu'une entrée portant le même nom est déjà présente.
+
+> **Attention**
+>
+> Écrire `1234` directement dans la commande l'enregistre généralement dans
+> l'historique du terminal. La méthode recommandée consiste à demander le mot
+> de passe de manière interactive :
+
+```bash
+security add-generic-password \
+  -a "$USER" \
+  -s "test" \
+  -U \
+  -w
+```
+
+Saisir `1234` lorsque macOS le demande. Placer `-w` en dernière position, sans
+valeur, déclenche la saisie interactive et évite d'ajouter le mot de passe à
+l'historique du terminal.
+
+## Récupérer le mot de passe
+
+```bash
+security find-generic-password \
+  -a "$USER" \
+  -s "test" \
+  -w
+```
+
+L'option `-w` affiche uniquement le mot de passe. Cette sortie reste sensible :
+éviter de la copier dans des journaux, des captures d'écran ou des scripts qui
+l'enregistreraient en clair.
+
+## Pourquoi utiliser le Trousseau sur macOS ?
+
+- les secrets sont stockés dans un espace chiffré géré par macOS ;
+- les droits d'accès peuvent être limités par application ;
+- le Trousseau peut demander le mot de passe de session ou Touch ID avant
+  d'autoriser un accès ;
+- les scripts peuvent récupérer un secret au moment où ils en ont besoin, sans
+  l'intégrer directement à leur code ;
+- une entrée peut être mise à jour ou supprimée de manière centralisée sans
+  modifier chaque script qui l'utilise.
