@@ -38,6 +38,13 @@ re-entering credentials:
 hermes -p sage model
 ```
 
+Remove all previous Hermes sessions, including archived ones, so stale context
+is not retrieved:
+
+```bash
+hermes sessions prune --older-than 0 --include-archived --yes
+```
+
 ## 2. Run Hermes in `tmux`
 
 Check for an existing session:

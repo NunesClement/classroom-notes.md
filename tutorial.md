@@ -149,6 +149,15 @@ interactively:
 hermes -p sage model
 ```
 
+### Remove previous Hermes sessions
+
+Before starting Hermes, remove all previous sessions, including archived ones,
+to prevent stale context from being retrieved:
+
+```bash
+hermes sessions prune --older-than 0 --include-archived --yes
+```
+
 ### Restart Hermes in `tmux`
 
 ```bash
