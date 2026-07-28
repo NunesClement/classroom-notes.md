@@ -13,3 +13,9 @@ __pycache__/
 # Local SAGE test output and captures
 test-run/
 snapshot.jpg
+
+# Local operating-system files
+.DS_Store
+
+# The embedded source is a normal directory, never a nested repository.
+orchestrator/.git/

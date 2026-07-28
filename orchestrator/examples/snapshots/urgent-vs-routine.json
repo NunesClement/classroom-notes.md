@@ -1,0 +1,44 @@
+{
+  "at": "2026-07-27T12:00:30Z",
+  "ready": [
+    {
+      "id": "goal-routine/job-routine/image-sampler/instance-001",
+      "name": "image-sampler",
+      "goalId": "goal-routine",
+      "jobId": "job-routine",
+      "enqueuedAt": "2026-07-27T12:00:00Z",
+      "priority": 20,
+      "estimatedRuntime": "30s",
+      "maxQueueLatency": "10m",
+      "predictedSuccessRate": 0.99,
+      "resources": {
+        "cpuMilli": 250,
+        "memoryBytes": 134217728,
+        "gpus": 0
+      }
+    },
+    {
+      "id": "goal-urgent/job-urgent/smoke-detector/instance-002",
+      "name": "smoke-detector",
+      "goalId": "goal-urgent",
+      "jobId": "job-urgent",
+      "enqueuedAt": "2026-07-27T12:00:00Z",
+      "priority": 90,
+      "estimatedRuntime": "20s",
+      "maxQueueLatency": "45s",
+      "requiresGpu": true,
+      "predictedSuccessRate": 0.95,
+      "resources": {
+        "cpuMilli": 1000,
+        "memoryBytes": 536870912,
+        "gpus": 1
+      }
+    }
+  ],
+  "running": [],
+  "available": {
+    "cpuMilli": 2000,
+    "memoryBytes": 2147483648,
+    "gpus": 1
+  }
+}

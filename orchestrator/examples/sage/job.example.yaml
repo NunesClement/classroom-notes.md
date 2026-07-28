@@ -1,0 +1,49 @@
+---
+# SAGE/Waggle job example. Replace W000 and verify both images before submitting
+# this file to a real SAGE deployment.
+# Scheduler hints affect admission only when an operator explicitly enables
+# trustWorkloadEnvHints for a trusted pilot.
+name: resilient-urgent-environmental-observation
+plugins:
+- name: urgent-cloud-cover
+  pluginSpec:
+    image: registry.sagecontinuum.org/seonghapark/cloud-cover:0.1.3
+    args:
+    - -stream
+    - top_camera
+    selector:
+      resource.gpu: "true"
+    resource:
+      request.cpu: "500m"
+      request.memory: "256Mi"
+      limit.cpu: "1"
+      limit.memory: "512Mi"
+      limit.gpu: "1"
+    env:
+      SAGE_SCHEDULER_PRIORITY: "90"
+      SAGE_SCHEDULER_MAX_LATENCY: "45s"
+      SAGE_SCHEDULER_ESTIMATED_RUNTIME: "20s"
+      SAGE_SCHEDULER_SUCCESS_RATE: "0.95"
+- name: routine-image-sampler
+  pluginSpec:
+    image: registry.sagecontinuum.org/theone/imagesampler:0.3.0
+    args:
+    - -stream
+    - top
+    resource:
+      request.cpu: "250m"
+      request.memory: "128Mi"
+      limit.cpu: "500m"
+      limit.memory: "256Mi"
+    env:
+      SAGE_SCHEDULER_PRIORITY: "20"
+      SAGE_SCHEDULER_MAX_LATENCY: "10m"
+      SAGE_SCHEDULER_ESTIMATED_RUNTIME: "30s"
+      SAGE_SCHEDULER_SUCCESS_RATE: "0.99"
+nodes:
+  W000:
+scienceRules:
+- "schedule(urgent-cloud-cover): cronjob('urgent-cloud-cover', '*/5 * * * *')"
+- "schedule(routine-image-sampler): cronjob('routine-image-sampler', '0 * * * *')"
+successCriteria:
+- "WallClock(1d)"

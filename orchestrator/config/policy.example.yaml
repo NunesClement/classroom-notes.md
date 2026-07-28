@@ -1,0 +1,37 @@
+apiVersion: scheduling.sagecontinuum.org/v1alpha1
+kind: ResilientUrgentPolicy
+
+# Keep admission conservative until real SAGE resource telemetry is wired in.
+maxConcurrent: 1
+maxGPUConcurrent: 1
+
+# Defaults apply when a SAGE PluginSpec.Env does not provide a scheduling hint.
+defaultPriority: 20
+defaultEstimatedRuntime: 30s
+defaultMaxQueueLatency: 5m
+
+# These horizons normalize queue age and remaining slack into a 0..100 score.
+agingHorizon: 10m
+slackHorizon: 5m
+
+defaultSuccessRate: 0.95
+minimumSuccessRate: 0.50
+
+# SECURITY: PluginSpec.Env is self-declared by job authors, not attested by
+# SAGE. Keep this false by default. A trusted pilot may set it to true only
+# after an operator has reviewed who can submit urgency hints.
+trustWorkloadEnvHints: false
+
+# Waggle currently passes placeholder availability to third-party policies.
+# Leave this false until the adapter receives a real resource snapshot.
+enforceResourceFit: false
+
+# On an internal policy error, select conservatively in FIFO order instead of
+# blocking all science plugins.
+failOpen: true
+
+weights:
+  priority: 0.45
+  slack: 0.30
+  age: 0.15
+  reliability: 0.10

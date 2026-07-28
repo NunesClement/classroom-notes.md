@@ -1,0 +1,9 @@
+# This file is read by sage-nodescheduler with --config.
+# nodeName is intentionally omitted so WAGGLE_NODE_VSN remains authoritative.
+inCluster: true
+noRabbitMQ: false
+ruleCheckerURI: http://wes-sciencerule-checker:5000
+scoreboardURI: wes-scoreboard:6379
+policy: resilient-urgent
+policyConfig: /etc/sage-resilient-urgent-scheduler/policy.yaml
+debug: false

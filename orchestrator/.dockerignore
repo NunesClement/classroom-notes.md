@@ -1,0 +1,12 @@
+.git
+.github
+bin
+coverage
+dist
+docs
+examples
+test
+*.out
+*.test
+.DS_Store
+private

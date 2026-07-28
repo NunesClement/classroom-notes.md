@@ -1,0 +1,34 @@
+SAGE Resilient Urgent Scheduler
+Copyright 2026 SAGE Resilient Urgent Scheduler contributors
+
+The original code in this repository is licensed under the Apache License,
+Version 2.0, as stated in the accompanying LICENSE file.
+
+Third-party interoperability notice
+-----------------------------------
+
+This project interoperates with:
+
+    waggle-sensor/edge-scheduler
+    https://github.com/waggle-sensor/edge-scheduler
+    inspected commit: 5391a00b34fa069f14b4ce50153725571007b5ef
+
+At the inspected commit, the repository snapshot did not contain a LICENSE,
+COPYING, or NOTICE file and the inspected source files did not state a project
+license. This project does not vendor the edge-scheduler source tree. The SAGE
+integration references edge-scheduler as a pinned Go module dependency to
+compile against and interoperate with its public Go types and SchedulingPolicy
+interface.
+
+The Apache License for this repository does not grant rights to
+waggle-sensor/edge-scheduler. Confirm its licensing terms with its copyright
+holders before distributing a binary that incorporates that dependency.
+
+This project also references kubernetes-sigs/scheduler-plugins for design
+comparison. No scheduler-plugins source code is vendored here. That upstream
+project is separately distributed under the Apache License, Version 2.0:
+
+    https://github.com/kubernetes-sigs/scheduler-plugins
+
+Other dependencies listed in go.mod or go.sum remain subject to their own
+licenses. This notice is informational and is not legal advice.

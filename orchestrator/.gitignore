@@ -1,0 +1,10 @@
+/bin/
+/dist/
+/coverage/
+/test/kwok/.state/
+*.out
+*.test
+.DS_Store
+.idea/
+.vscode/
+/test/kwok/.state/

@@ -1,0 +1,36 @@
+# PREPARED ONLY: this strategic-merge patch is not applied by this repository.
+# Confirm that the live object is still Deployment/wes-plugin-scheduler in the
+# default namespace and replace the development image with an immutable digest.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wes-plugin-scheduler
+  namespace: default
+spec:
+  template:
+    metadata:
+      annotations:
+        scheduling.sagecontinuum.org/policy: resilient-urgent
+        # Replace whenever ConfigMap data changes. Prefer a generated content
+        # hash in the real chart/Kustomization so the Pod rolls automatically.
+        scheduling.sagecontinuum.org/config-revision: replace-with-config-hash
+    spec:
+      containers:
+      - name: wes-plugin-scheduler
+        image: ghcr.io/clementnunes/sage-resilient-urgent-scheduler:dev
+        imagePullPolicy: IfNotPresent
+        command:
+        - /usr/local/bin/sage-nodescheduler
+        args:
+        - --config
+        - /etc/sage-resilient-urgent-scheduler/nodescheduler.yaml
+        - --policy-config
+        - /etc/sage-resilient-urgent-scheduler/policy.yaml
+        volumeMounts:
+        - name: resilient-urgent-config
+          mountPath: /etc/sage-resilient-urgent-scheduler
+          readOnly: true
+      volumes:
+      - name: resilient-urgent-config
+        configMap:
+          name: sage-resilient-urgent-scheduler

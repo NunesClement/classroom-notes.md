@@ -1,0 +1,42 @@
+# PREPARED ONLY: do not apply before confirming the live SAGE namespace,
+# Deployment name, image registry, and configuration with the SAGE operators.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sage-resilient-urgent-scheduler
+  namespace: default
+  labels:
+    app.kubernetes.io/name: sage-resilient-urgent-scheduler
+    app.kubernetes.io/part-of: waggle-edge-scheduler
+data:
+  nodescheduler.yaml: |
+    # nodeName is intentionally omitted so WAGGLE_NODE_VSN remains authoritative.
+    inCluster: true
+    noRabbitMQ: false
+    ruleCheckerURI: http://wes-sciencerule-checker:5000
+    scoreboardURI: wes-scoreboard:6379
+    policy: resilient-urgent
+    policyConfig: /etc/sage-resilient-urgent-scheduler/policy.yaml
+    debug: false
+  policy.yaml: |
+    apiVersion: scheduling.sagecontinuum.org/v1alpha1
+    kind: ResilientUrgentPolicy
+    maxConcurrent: 1
+    maxGPUConcurrent: 1
+    defaultPriority: 20
+    defaultEstimatedRuntime: 30s
+    defaultMaxQueueLatency: 5m
+    agingHorizon: 10m
+    slackHorizon: 5m
+    defaultSuccessRate: 0.95
+    minimumSuccessRate: 0.50
+    # Keep false unless a closed pilot or an admission service authorizes
+    # scheduling hints by identity/tenant.
+    trustWorkloadEnvHints: false
+    enforceResourceFit: false
+    failOpen: true
+    weights:
+      priority: 0.45
+      slack: 0.30
+      age: 0.15
+      reliability: 0.10

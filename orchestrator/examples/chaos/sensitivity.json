@@ -1,0 +1,44 @@
+{
+  "baseline": {
+    "at": "2026-07-27T12:00:00Z",
+    "ready": [
+      {
+        "id": "smoke-detector",
+        "enqueuedAt": "2026-07-27T11:59:50Z",
+        "priority": 80,
+        "estimatedRuntime": "20s",
+        "deadlineAt": "2026-07-27T12:01:00Z",
+        "requiresGpu": true
+      },
+      {
+        "id": "air-quality",
+        "enqueuedAt": "2026-07-27T11:59:50Z",
+        "priority": 80,
+        "estimatedRuntime": "20s",
+        "deadlineAt": "2026-07-27T12:01:00Z"
+      }
+    ]
+  },
+  "perturbations": [
+    {
+      "name": "smoke-detector-deadline-10s-earlier",
+      "taskId": "smoke-detector",
+      "deadlineAtShift": "-10s"
+    },
+    {
+      "name": "smoke-detector-arrives-5s-earlier",
+      "taskId": "smoke-detector",
+      "enqueuedAtShift": "-5s"
+    },
+    {
+      "name": "smoke-detector-reliability-drops",
+      "taskId": "smoke-detector",
+      "successRateDelta": -0.25
+    },
+    {
+      "name": "smoke-detector-runtime-plus-15s",
+      "taskId": "smoke-detector",
+      "estimatedRuntimeShift": "15s"
+    }
+  ]
+}
