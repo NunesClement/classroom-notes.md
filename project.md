@@ -149,6 +149,16 @@ The repository includes:
 - 92 named tests and one fuzz target across policy, adapter, CLI, resource,
   orchestration, transfer, and configuration behavior.
 
+## Artifacts of accomplishments
+
+- [Orchestrator decision-story presentation](orchestrator/output/presentation/orchestrator-decision-story.pptx)
+- [Project explanation PDF](orchestrator/output/pdf/sage-resilient-urgent-scheduler-explanation.pdf)
+- [Repository guide PDF](orchestrator/output/pdf/sage-resilient-urgent-scheduler-repository-guide.pdf)
+- [Complete scheduler and paired-camera source](orchestrator/)
+- [Offline urgent-versus-routine example](orchestrator/examples/snapshots/urgent-vs-routine.json)
+- [Chaos sensitivity experiment](orchestrator/examples/chaos/sensitivity.json)
+- [Classroom notes and workshop tutorial](classroom-notes.md)
+
 ## What the result means
 
 The project currently demonstrates a scheduling brain and integration
