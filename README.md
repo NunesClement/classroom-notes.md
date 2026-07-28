@@ -1,4 +1,4 @@
-# classroom-notes.md
-```bash
-personnal notes (for tutorial see tutorial.md)
-```
+# SAGE notes
+
+- [General development notes](tutorial.md)
+- [Workshop quickstart](sage-workshop-quickstart.md)
