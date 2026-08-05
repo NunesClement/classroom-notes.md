@@ -27,9 +27,29 @@ must answer three questions:
 2. Can it start without exceeding safe limits?
 3. Why was each application selected, deferred, or rejected?
 
-## Project goals
+## Project goal: a reusable scheduling wrapper
 
-The scheduling layer is designed to:
+The goal is not to build a scheduler that works only for Mortimus. It is to
+provide a reusable urgent-computing wrapper around the scheduling boundary of a
+SAGE application.
+
+```mermaid
+flowchart TB
+    subgraph W["Reusable urgent-computing scheduling wrapper"]
+        direction TB
+        P["Policy: validate, rank, admit, explain"]
+        subgraph A["Ready SAGE application"]
+            X["Mortimus or another application"]
+        end
+        P -->|"start / wait / reject"| X
+    end
+```
+
+“Wrapper” is a conceptual boundary: it does not modify the application or wrap
+its container. It surrounds the readiness-to-execution decision with a policy
+that reads generic task metadata and decides whether the application may start.
+
+The wrapper is designed to:
 
 - favor deadline-sensitive work while using queue age to reduce starvation;
 - enforce configured concurrency and trusted resource limits;
@@ -37,11 +57,11 @@ The scheduling layer is designed to:
 - continue with a bounded queue-order fallback if the main policy fails;
 - remain reusable across applications and testable without a live cluster.
 
-SAGE remains the platform orchestrator. This component changes only the
-selection policy inside its existing workflow; it does not replace Beehive,
-WES, the `NodeScheduler`, or Kubernetes.
+SAGE remains the platform orchestrator. The wrapper changes only the selection
+policy inside its existing workflow; it does not replace Beehive, WES, the
+`NodeScheduler`, or Kubernetes.
 
-## System overview
+## How the wrapper fits into SAGE
 
 ```mermaid
 flowchart LR
