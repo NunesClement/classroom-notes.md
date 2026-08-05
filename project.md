@@ -63,16 +63,41 @@ remote landscape, inference runs close to the data, and the wider system can
 publish a compact result instead of continuously moving full-resolution
 imagery.
 
+The two scenes illustrate the operational change that creates urgency:
+
+| Routine landscape observation | Possible smoke event |
+|---|---|
+| ![Clear landscape used as Mortimus project context](assets/mortimus/clear-landscape-reference.png) | ![Smoke plume used as Mortimus project context](assets/mortimus/smoke-event-context.png) |
+
+**In urgent computing, the right result delivered too late is the wrong result.**
+
+*These are project-context images, not scheduler output or evaluation results.*
+
 The scheduler does not detect smoke or choose an AI model. When SAGE makes the
 Mortimus application ready, the generic policy can rank and admit it like any
 other SAGE workload. The repository prepares this integration boundary, but it
 does not contain an end-to-end Mortimus deployment.
 
+The wider Mortimus concept connects the cameras, local inference on a SAGE
+Thor node, the scheduler, a low-bandwidth Meshtastic path, and optional Beehive
+publication:
+
+![Conceptual Mortimus, HaLow, Meshtastic, SAGE Thor, scheduler, and Beehive integration](assets/mortimus/mortimus-orchestrator-context.png)
+
+*Conceptual system context. Solid lines represent physically linked components;
+dotted lines represent distant request or image exchange.*
+
+In this design, the scheduler remains the reusable selection layer. The
+companion [SAGE Meshtastic project](https://github.com/dMac716/sage-dev-meshtastic)
+explores the low-bandwidth control and verdict path rather than embedding that
+transport in the scheduler.
+
 The repository also includes an optional paired-camera core for a primary and
 an additional HaLow image source. It correlates the captures and validates
 time, pose, size, and transfer integrity before calling an injected analyzer.
 This is an optional application feature, not a scheduler requirement. Camera
-drivers, transport, storage, and AI models remain separate integration work.
+drivers, MQTT/Meshtastic adapters, storage, AI models, and Beehive publication
+remain separate integration work.
 
 ## Concepts in more detail
 
