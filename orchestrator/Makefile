@@ -5,13 +5,13 @@ IMAGE ?= ghcr.io/clementnunes/sage-resilient-urgent-scheduler
 BIN_DIR ?= bin
 BIN_DIR_ABS := $(abspath $(BIN_DIR))
 
-.PHONY: all build build-policyctl build-chaoslab build-sage test test-core \
+.PHONY: all build build-policyctl build-chaoslab build-intentctl build-sage test test-core \
 	test-sage test-race vet fmt-check validate-config example chaos-example \
 	docker-build ci clean
 
 all: ci
 
-build: build-policyctl build-chaoslab build-sage
+build: build-policyctl build-chaoslab build-intentctl build-sage
 
 build-policyctl:
 	mkdir -p "$(BIN_DIR_ABS)"
@@ -20,6 +20,10 @@ build-policyctl:
 build-chaoslab:
 	mkdir -p "$(BIN_DIR_ABS)"
 	$(GO) build -trimpath -o "$(BIN_DIR_ABS)/chaoslab" ./cmd/chaoslab
+
+build-intentctl:
+	mkdir -p "$(BIN_DIR_ABS)"
+	$(GO) build -trimpath -o "$(BIN_DIR_ABS)/intentctl" ./cmd/intentctl
 
 build-sage:
 	mkdir -p "$(BIN_DIR_ABS)"
@@ -84,5 +88,6 @@ clean:
 	rm -f -- \
 		"$(BIN_DIR_ABS)/policyctl" \
 		"$(BIN_DIR_ABS)/chaoslab" \
+		"$(BIN_DIR_ABS)/intentctl" \
 		"$(BIN_DIR_ABS)/sage-nodescheduler"
 	-rmdir -- "$(BIN_DIR_ABS)"

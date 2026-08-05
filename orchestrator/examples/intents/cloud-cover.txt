@@ -1,0 +1,2 @@
+Measure cloud cover by running the cloud-cover application on node W000 every
+hour. Consider the science goal complete after one day.

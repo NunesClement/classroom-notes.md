@@ -1,14 +1,27 @@
-# Resilient Urgent SAGE Orchestration — First-Pass Summary
+# Resilient Scheduling for SAGE — Mortimus Integration
 
-**Project:** Build an explainable admission and scheduling layer for urgent
-edge-AI applications on SAGE/Waggle nodes. The scheduler should favor
-time-sensitive work without permanently starving routine tasks, respect
-concurrency and GPU limits, and explain every selection, deferral, or
-rejection. An optional second component establishes a validated
-primary/additional-camera boundary for multi-view AI applications.
+**Direction:** Build one explainable scheduling core, connect it to SAGE through
+an adapter, and validate it first with Mortimus. The scheduler favors urgent
+work without permanently starving routine tasks, respects concurrency and GPU
+limits, and explains every selection, deferral, or rejection.
 
-The complete implementation and technical documentation are included in
+The scheduler is developed in the
+[canonical GitHub repository](https://github.com/NunesClement/sage-resilient-urgent-scheduler).
+A source snapshot and the technical documentation are included in
 [`orchestrator/`](orchestrator/).
+
+## Reusable core, Mortimus first
+
+The policy engine is application-agnostic: it sees task identity, priority,
+deadlines, age, reliability, and resource needs—not cameras, smoke, Mortimus,
+or a specific AI model. The SAGE adapter translates Waggle queues into this
+generic input and returns the selected tasks to the existing `NodeScheduler`.
+
+Mortimus is the first target integration because smoke detection makes urgency
+and limited edge capacity concrete. The same engine can be reused for another
+SAGE application or plugged into a different queue/controller by implementing
+an adapter at the boundary; application-specific capture, inference, and
+communication remain outside the scheduler.
 
 ## Challenge
 
@@ -24,14 +37,13 @@ to answer three questions deterministically:
 The policy deliberately stops at admission. The existing SAGE
 `NodeScheduler` creates the Pod, and Kubernetes performs final node placement.
 
-## Motivating context: Mortimus and resilient field vision
+## Mortimus validation context
 
-The orchestrator was developed in the context of a broader Mortimus /
-SmokeSpotter field concept: cameras observe a remote landscape, AI runs beside
-the image on a SAGE Thor node, and the system sends a small decision instead of
-streaming full-resolution imagery over a constrained link. A normal scene is
-routine work; the appearance of a smoke plume turns capture, inference, and
-corroboration into deadline-sensitive work.
+In the Mortimus / SmokeSpotter field concept, cameras observe a remote
+landscape, AI runs beside the image on a SAGE Thor node, and the system sends a
+small decision instead of streaming full-resolution imagery over a constrained
+link. A normal scene is routine work; a possible smoke plume makes capture,
+inference, and corroboration deadline-sensitive.
 
 The two scenes below illustrate that operational contrast. They are project
 context images, not model outputs or a reported evaluation dataset.
@@ -40,19 +52,18 @@ context images, not model outputs or a reported evaluation dataset.
 |---|---|
 | ![Clear forest and dune landscape used as a visual reference](assets/mortimus/clear-landscape-reference.png) | ![Large smoke plume rising behind a dune landscape](assets/mortimus/smoke-event-context.png) |
 
-The larger concept combines a primary camera, an additional HaLow camera,
-local model execution, resilient scheduling, a low-bandwidth Meshtastic
-control path, and optional WAN publication:
+The larger concept combines local inference, resilient scheduling, an optional
+additional HaLow camera, a low-bandwidth Meshtastic path, and WAN publication:
 
 ![Conceptual Mortimus, HaLow, Meshtastic, THOR, scheduler, and Beehive architecture](assets/mortimus/mortimus-orchestrator-context.png)
 
 *Conceptual system context. Solid lines represent physically linked
 components; dotted lines represent distant request/image exchange.*
 
-This repository implements the orange scheduling brain and the optional
-paired-camera/HaLow coordination contracts. The diagram's concrete Mortimus
-application, JEPA/DINO/CNN model cascade, MQTT and Meshtastic adapters, and
-Beehive publication path remain separate integration work. The companion
+This project supplies the reusable scheduling brain and optional
+paired-camera/HaLow contracts. Mortimus inference, camera drivers, MQTT and
+Meshtastic adapters, and Beehive publication remain integration work. The
+companion
 [Sage Meshtastic project](https://github.com/dMac716/sage-dev-meshtastic)
 explores the low-bandwidth control and verdict path.
 
@@ -93,16 +104,16 @@ self-declared rather than attested control-plane data.
 ## Implemented architecture
 
 ```mermaid
-flowchart TD
-    A["SAGE science rule"] --> B["Ready and running queue snapshot"]
-    B --> C["Validate identity, metadata, and resources"]
-    C --> D["Rank priority, slack, age, and reliability"]
-    D --> E["Admission control: concurrency, GPU, reliability, resources"]
-    E --> F["Explained select / defer / reject decision"]
-    F --> G["SAGE NodeScheduler creates Pod"]
-    G --> H["Kubernetes chooses node"]
-    D -. "internal engine failure" .-> I["Bounded FIFO fail-open"]
-    I --> F
+flowchart LR
+    A["Mortimus or another SAGE workload"] --> B["SAGE / Waggle adapter"]
+    X["Another queue or controller"] --> Y["Its adapter"]
+    B --> C["Application-agnostic policy engine"]
+    Y --> C
+    C --> D["Validate, rank, and admit"]
+    D --> E["Explained select / defer / reject"]
+    E --> F["Existing NodeScheduler and Kubernetes"]
+    D -. "engine failure" .-> G["Bounded FIFO fail-open"]
+    G --> E
 ```
 
 The paired-camera library is additive and independent of scheduling:
@@ -124,6 +135,11 @@ HaLow transfer contract adds chunk identity, SHA-256 verification, and an
 acknowledgement that permits cached-image deletion only after durable
 persistence.
 
+An optional intent gateway is also additive. `intentctl` asks the existing
+Hermes/GLM service to translate natural language into a small SAGE science-goal
+draft. The draft is validated and always requires human review; it cannot
+choose plugins, assign scheduler priority, or submit a job.
+
 ## Current result
 
 The supplied offline scenario compares an urgent GPU smoke detector with a
@@ -144,49 +160,38 @@ The repository includes:
 - `policyctl` for offline snapshot replay and explained JSON decisions;
 - `chaoslab` for deterministic sensitivity analysis;
 - a SAGE/Waggle adapter and replacement `sage-nodescheduler` binary;
+- `intentctl` for human-reviewed natural-language science-goal drafts;
 - example Docker and Kubernetes deployment material;
 - an optional paired-camera/HaLow contract;
-- 92 named tests and one fuzz target across policy, adapter, CLI, resource,
+- unit tests and a fuzz target across policy, adapter, CLI, intent,
   orchestration, transfer, and configuration behavior.
 
 ## Artifacts of accomplishments
 
-- [Orchestrator decision-story presentation](orchestrator/output/presentation/orchestrator-decision-story.pptx)
+- [Canonical scheduler repository](https://github.com/NunesClement/sage-resilient-urgent-scheduler)
 - [Project explanation PDF](orchestrator/output/pdf/sage-resilient-urgent-scheduler-explanation.pdf)
 - [Repository guide PDF](orchestrator/output/pdf/sage-resilient-urgent-scheduler-repository-guide.pdf)
 - [Complete scheduler and paired-camera source](orchestrator/)
+- [Intent-translation experiment](orchestrator/docs/intent-translation.md)
 - [Offline urgent-versus-routine example](orchestrator/examples/snapshots/urgent-vs-routine.json)
 - [Chaos sensitivity experiment](orchestrator/examples/chaos/sensitivity.json)
 - [Classroom notes and workshop tutorial](classroom-notes.md)
 
-## What the result means
+## Current boundaries
 
-The project currently demonstrates a scheduling brain and integration
-boundary, not a production deployment. In particular:
+This is a tested scheduling core and integration boundary, not a production
+deployment:
 
 - `failOpen` means bounded FIFO scheduling after a policy-engine failure; it
   does not mean switching from one AI model to another;
-- predicted reliability is a configured or declared value, not a learned
-  measurement from inference telemetry;
-- real resource fitting remains disabled because the pinned Waggle revision
-  supplies placeholder availability;
-- the camera component defines interfaces and validation behavior but has no
-  concrete camera, GPS/PTZ, MQTT, durable-storage, or AI adapter;
-- no SAGE node has yet run this replacement scheduler.
-
-## Caveats
-
-The largest blockers are in the pinned upstream Waggle controller:
-
-- some queue removal paths identify work by plugin name rather than full
-  runtime identity;
-- the ready queue cannot be snapshotted atomically;
-- the local scheduling REST route creates incomplete runtime objects;
-- Pod-creation failures are not always requeued;
-- queue age is held only in memory and resets after restart.
-
-The policy interface also cannot preempt a running Pod, checkpoint work,
-create replicas, migrate tasks, or manage retry budgets.
+- resource fitting remains disabled until SAGE supplies trustworthy capacity;
+- camera, GPS/PTZ, MQTT, storage, and AI adapters remain separate from the
+  scheduler core;
+- intent output is a reviewable draft, never an executable scheduling command;
+- upstream queue identity, atomic snapshot, requeue, and restart-state issues
+  must be addressed before a canary;
+- preemption, checkpointing, replication, migration, and retry budgets remain
+  outside the current SAGE policy interface.
 
 ## Next
 
@@ -194,9 +199,8 @@ create replicas, migrate tasks, or manage retry budgets.
    namespace, service account, and deployment method with the SAGE team.
 2. Fix full-identity queue removal, atomic snapshots, and requeue behavior
    upstream.
-3. Run the full test and race-test matrix with Go 1.20 and the current
-   supported toolchain.
-4. Validate in offline replay and shadow mode before a controlled canary.
-5. If paired-camera inference is pursued, implement the hardware,
+3. Validate the generic policy in replay and shadow mode, then run it alongside
+   the Mortimus workload in a controlled canary.
+4. If paired-camera inference is pursued, implement the hardware,
    MQTT-over-Wi-Fi-HaLow, durable caching, and `PairAnalyzer` adapters as
    separate deployment components.

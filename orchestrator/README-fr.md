@@ -2,7 +2,16 @@
 
 [English version](README.md)
 
+Dépôt de référence :
+[github.com/NunesClement/sage-resilient-urgent-scheduler](https://github.com/NunesClement/sage-resilient-urgent-scheduler)
+
 Ce dépôt contient un premier MVP d’ordonnancement explicable pour les nœuds SAGE/Waggle. Il classe les applications urgentes, applique des limites simples de capacité et fournit un adaptateur compilable avec le `NodeScheduler` SAGE.
+
+Le cœur de la politique est indépendant de l’application : les adaptateurs lui
+fournissent des tâches et des capacités génériques, tandis que l’acquisition,
+l’inférence et le transport restent hors du scheduler. Le projet Summer Camp
+branche ce cœur sur Mortimus via l’adaptateur SAGE ; d’autres applications ou
+contrôleurs peuvent réutiliser le même moteur avec leur propre adaptateur.
 
 Le MVP n’a été ni déployé ni connecté à un nœud SAGE. Le moteur peut être utilisé hors ligne avec `policyctl`, tandis que le module `integrations/sage` prépare l’intégration réelle sans embarquer une copie du dépôt SAGE.
 
@@ -61,6 +70,9 @@ Le MVP n’a été ni déployé ni connecté à un nœud SAGE. Le moteur peut ê
   requête/réponse HaLow versionné, une position GPS/arpentée et un état PTZ
   associés à chaque prise de vue, ainsi qu’un transfert découpé vérifiable ; le
   comportement existant du scheduler ne change pas.
+- Fournit une passerelle optionnelle `intentctl` qui demande au service
+  Hermes/GLM existant de traduire le langage naturel en un petit brouillon
+  d’objectif scientifique utilisant les termes SAGE existants.
 
 ### Ce que le MVP ne fait pas encore
 
@@ -72,6 +84,9 @@ Le MVP n’a été ni déployé ni connecté à un nœud SAGE. Le moteur peut ê
 - Il n’utilise pas encore les capteurs, l’énergie, la température ou une prédiction apprise.
 - Il ne remplace pas les garanties temps réel absentes de Kubernetes.
 - Il ne fournit pas encore d’autorisation multi-tenant des niveaux d’urgence.
+- Un brouillon d’intention n’est pas exécutable : le traducteur ne choisit pas de
+  plugin, n’attribue pas de priorité, ne soumet pas de job SAGE et ne contourne
+  pas l’approbation humaine.
 - Il ne fournit pas d’adaptateur MQTT/Meshtastic concret, de pilote matériel
   pour caméra, GPS ou PTZ, ni d’adaptateur d’IA. Ces éléments dépendent du
   déploiement et implémentent les interfaces du cœur.
@@ -155,19 +170,45 @@ opérateur peut l’activer pour un pilote fermé après avoir vérifié qui peu
 soumettre des hints ; en environnement partagé, une admission SAGE doit les
 autoriser selon l’identité du demandeur.
 
+## Traduction optionnelle des intentions
+
+`intentctl` utilise le service Hermes interne existant via une API de
+chat-completions compatible OpenAI. GLM 5.2 est le modèle par défaut ; un
+déploiement de modèle séparé n’est pas nécessaire pour cette première version.
+
+```bash
+export HERMES_CHAT_COMPLETIONS_URL=http://hermes.internal/v1/chat/completions
+export HERMES_API_KEY=a-remplacer-si-necessaire
+
+go run ./cmd/intentctl -input examples/intents/cloud-cover.txt
+```
+
+Le résultat est un petit brouillon JSON contenant `goal`, `applications`,
+`nodes`, `nodeTags`, `scienceRules`, `successCriteria` et les `questions`
+ouvertes. Il porte `humanApprovalRequired: true` et ne peut pas être transmis
+directement au scheduler. Si Hermes ne gère pas le mode de réponse JSON
+d’OpenAI, ajouter `-json-mode=false`. Voir
+[docs/intent-translation.md](docs/intent-translation.md) pour le mapping.
+
 ## Structure
 
 - `pkg/policy` : moteur déterministe et types indépendants.
 - `pkg/orchestration` : coordination optionnelle d’une caméra principale et
   d’une caméra additionnelle, avec une interface d’IA générique.
+- `pkg/intent` : petit brouillon d’objectif scientifique et frontière de
+  traduction Hermes.
 - `cmd/policyctl` : validation et replay hors ligne.
 - `cmd/chaoslab` : étude hors ligne de la sensibilité des décisions.
+- `cmd/intentctl` : traduction optionnelle du langage naturel vers un brouillon
+  d’objectif scientifique.
 - `integrations/sage/adapter` : conversion des files Waggle vers le moteur.
 - `integrations/sage/cmd/waggle-nodescheduler` : binaire SAGE avec la politique injectée.
 - `integrations/sage/deploy` : manifests préparés, non appliqués, et procédure de redémarrage.
 - `docs/architecture-fr.md` : calcul de décision, limites et trajectoire de validation.
 - `docs/halow-orchestration.md` : flux additionnel à deux images et contrat du
   protocole HaLow.
+- `docs/intent-translation.md` : sémantique des intentions, frontière du
+  modèle et utilisation.
 - `docs/sage-integration-fr.md` : contrat précis avec SAGE et question de déploiement.
 
 Le code reste testé avec Go 1.20 pour la compatibilité de la dépendance SAGE.

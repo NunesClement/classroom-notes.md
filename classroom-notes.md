@@ -24,6 +24,10 @@ captures.
 
 ## 2026-07-27 — Resilient urgent scheduler
 
+- Published the reusable scheduler in
+  [`NunesClement/sage-resilient-urgent-scheduler`](https://github.com/NunesClement/sage-resilient-urgent-scheduler).
+- Kept the policy engine application-agnostic; Mortimus is the first integration
+  and reaches the engine through the SAGE/Waggle adapter.
 - Defined the challenge as explainable admission for urgent and routine
   edge-AI tasks competing for constrained SAGE resources.
 - Implemented deterministic ranking from priority, deadline slack, queue age,
@@ -39,6 +43,8 @@ captures.
 - Added the SAGE/Waggle policy adapter and replacement NodeScheduler build,
   while leaving Pod creation and lifecycle management with the upstream
   controller.
+- Added an optional Hermes/GLM intent gateway that returns a human-reviewed
+  science-goal draft rather than an executable scheduler command.
 
 ## 2026-07-27 — Paired-camera and HaLow design
 

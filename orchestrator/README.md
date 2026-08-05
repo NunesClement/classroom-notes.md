@@ -2,7 +2,16 @@
 
 [Version française](README-fr.md)
 
+Canonical repository:
+[github.com/NunesClement/sage-resilient-urgent-scheduler](https://github.com/NunesClement/sage-resilient-urgent-scheduler)
+
 This repository contains an initial explainable scheduling MVP for SAGE/Waggle nodes. It ranks urgent applications, applies simple capacity limits, and provides an adapter that compiles against the SAGE `NodeScheduler`.
+
+The policy core is application-agnostic: adapters provide generic task and
+capacity data, while application-specific capture, inference, and transport
+stay outside the scheduler. The summer-camp project plugs this core into
+Mortimus through the SAGE adapter; other applications and controllers can use
+the same engine through their own adapters.
 
 The MVP has not been deployed or connected to a SAGE node. The engine can be used offline with `policyctl`, while the `integrations/sage` module prepares the actual integration without embedding a copy of the SAGE repository.
 
@@ -60,6 +69,9 @@ The MVP has not been deployed or connected to a SAGE node. The engine can be use
 - Provides an opt-in paired-camera core with a versioned HaLow request/reply
   seam, capture-time GPS/surveyed position and PTZ metadata, and verified chunk
   transfer; existing scheduling behavior is unchanged.
+- Provides an optional `intentctl` gateway that asks the existing Hermes/GLM
+  service to translate natural language into a small, reviewable science-goal
+  draft using existing SAGE terms.
 
 ### What the MVP Does Not Do Yet
 
@@ -71,6 +83,8 @@ The MVP has not been deployed or connected to a SAGE node. The engine can be use
 - It does not yet use sensors, energy, temperature, or a learned prediction.
 - It does not replace the real-time guarantees that Kubernetes lacks.
 - It does not yet provide multi-tenant authorization for urgency levels.
+- An intent draft is not executable: the translator does not choose plugins,
+  assign priority, submit SAGE jobs, or bypass human approval.
 - It does not provide a concrete MQTT/Meshtastic transport, physical camera,
   GPS, or PTZ driver, or AI adapter. Those are deployment-specific
   implementations of the core interfaces.
@@ -152,18 +166,40 @@ operator can enable it for a closed pilot after verifying who can submit hints;
 in a shared environment, SAGE admission must authorize them according to the
 requester's identity.
 
+## Optional Intent Translation
+
+`intentctl` uses the existing internal Hermes service through an
+OpenAI-compatible chat-completions endpoint. GLM 5.2 is the default model; a
+separate model deployment is not required for this first version.
+
+```bash
+export HERMES_CHAT_COMPLETIONS_URL=http://hermes.internal/v1/chat/completions
+export HERMES_API_KEY=replace-if-required
+
+go run ./cmd/intentctl -input examples/intents/cloud-cover.txt
+```
+
+The result is a small JSON draft containing `goal`, `applications`, `nodes`,
+`nodeTags`, `scienceRules`, `successCriteria`, and any open `questions`. It has
+`humanApprovalRequired: true` and cannot be passed directly to the scheduler.
+If Hermes does not implement OpenAI JSON response mode, add `-json-mode=false`.
+See [docs/intent-translation.md](docs/intent-translation.md) for the mapping.
+
 ## Structure
 
 - `pkg/policy`: deterministic engine and independent types.
 - `pkg/orchestration`: optional primary-plus-additional camera coordination and
   the generic AI boundary.
+- `pkg/intent`: the small science-goal draft and Hermes translation boundary.
 - `cmd/policyctl`: offline validation and replay.
 - `cmd/chaoslab`: offline analysis of decision sensitivity.
+- `cmd/intentctl`: optional natural-language-to-science-goal-draft command.
 - `integrations/sage/adapter`: conversion from Waggle queues to the engine.
 - `integrations/sage/cmd/waggle-nodescheduler`: SAGE binary with the policy injected.
 - `integrations/sage/deploy`: prepared, unapplied manifests and restart procedure.
 - `docs/architecture.md`: decision calculation, limitations, and validation path.
 - `docs/halow-orchestration.md`: additive two-image flow and HaLow protocol seam.
+- `docs/intent-translation.md`: intent semantics, model boundary, and usage.
 - `docs/sage-integration.md`: exact SAGE contract and deployment question.
 
 The code remains tested with Go 1.20 for compatibility with the SAGE
