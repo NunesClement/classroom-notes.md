@@ -4,9 +4,9 @@ Urgent computing aims to produce a useful result before that result loses its
 value. A correct decision delivered after its operational deadline can be as
 unhelpful as a wrong decision.
 
-This project adds an explainable scheduling layer for urgent edge applications.
-It decides which ready application should start next, checks whether it can
-start safely, and explains the decision. The decision engine is
+This project adds an explainable urgent-computing scheduling policy for edge
+applications. It decides which ready application should start next, checks
+whether it can start safely, and explains the decision. The decision engine is
 application-agnostic; Mortimus is the concrete integration target used here to
 explain and validate it.
 
@@ -20,36 +20,20 @@ time-sensitive events may compete for the same CPU, memory, GPU, and execution
 slots while priorities and deadlines change.
 
 Mortimus makes this problem concrete. Routine landscape observation may wait,
-but a possible smoke event makes timely inference more valuable. The scheduler
-must answer three questions:
+but a possible smoke event makes timely inference more valuable. The scheduling
+policy must answer three questions:
 
 1. Which ready application should start next?
 2. Can it start without exceeding safe limits?
 3. Why was each application selected, deferred, or rejected?
 
-## Project goal: a reusable scheduling wrapper
+## Project goal
 
-The goal is not to build a scheduler that works only for Mortimus. It is to
-provide a reusable urgent-computing wrapper around the scheduling boundary of a
-SAGE application.
+The goal is not to build a policy that works only for Mortimus. It is to provide
+a reusable urgent-computing scheduling policy at SAGE's ready-application
+selection point.
 
-```mermaid
-flowchart TB
-    subgraph W["Reusable urgent-computing scheduling wrapper"]
-        direction TB
-        P["Policy: validate, rank, admit, explain"]
-        subgraph A["Ready SAGE application"]
-            X["Mortimus or another application"]
-        end
-        P -->|"start / wait / reject"| X
-    end
-```
-
-“Wrapper” is a conceptual boundary: it does not modify the application or wrap
-its container. It surrounds the readiness-to-execution decision with a policy
-that reads generic task metadata and decides whether the application may start.
-
-The wrapper is designed to:
+The scheduling policy is designed to:
 
 - favor deadline-sensitive work while using queue age to reduce starvation;
 - enforce configured concurrency and trusted resource limits;
@@ -57,24 +41,41 @@ The wrapper is designed to:
 - continue with a bounded queue-order fallback if the main policy fails;
 - remain reusable across applications and testable without a live cluster.
 
-SAGE remains the platform orchestrator. The wrapper changes only the selection
-policy inside its existing workflow; it does not replace Beehive, WES, the
-`NodeScheduler`, or Kubernetes.
+SAGE remains the platform orchestrator. The scheduling policy changes only
+which ready application is selected inside its existing workflow; it does not
+replace Beehive, WES, Kubernetes, or the `NodeScheduler` controller's
+responsibilities. Deployment may still package that controller in a replacement
+binary or image.
 
-## How the wrapper fits into SAGE
+## How the scheduling policy fits into SAGE
 
 ```mermaid
 flowchart LR
     A["Ready SAGE applications, including Mortimus"] --> B["SAGE / Waggle adapter"]
-    B --> C["Application-agnostic scheduler"]
+    B --> C["Application-agnostic scheduling policy"]
     C --> D["Select / defer / reject"]
     D --> E["NodeScheduler and Kubernetes"]
 ```
 
 The SAGE adapter converts ready and active Waggle runtimes into generic task
-data. The scheduler returns explained decisions, the existing `NodeScheduler`
-creates Pods, and Kubernetes places and runs them. Another controller can reuse
-the decision engine through its own adapter.
+data. The scheduling policy returns explained decisions, the existing
+`NodeScheduler` creates Pods, and Kubernetes places and runs them. Another
+controller can reuse the decision engine through its own adapter.
+
+The current SAGE adapter implements Waggle's Go scheduling-policy interface and
+is compiled into this repository's replacement `waggle-nodescheduler` binary.
+Upstream Waggle's `policy` argument selects a policy registered in its compiled
+binary. This repository instead injects its adapter and accepts only
+`-policy resilient-urgent`; neither path dynamically loads a Python script. A
+policy written in Python or another language would therefore need a compiled
+bridge or another explicit process boundary.
+
+A Kubernetes Scheduling Framework plugin or a separate Kubernetes scheduler is
+another possible implementation direction. It operates one level lower,
+filtering and scoring nodes for Pods after SAGE has selected an application.
+The current project keeps urgent application selection in Waggle's
+`NodeScheduler` and leaves Pod placement to the configured Kubernetes
+scheduler.
 
 ## Mortimus integration target
 
@@ -91,10 +92,10 @@ The two scenes illustrate the operational change that creates urgency:
 
 **In urgent computing, the right result delivered too late is the wrong result.**
 
-*These are project-context images, not scheduler output or evaluation results.*
+*These are project-context images, not policy output or evaluation results.*
 
-The scheduler does not detect smoke or choose an AI model. When SAGE makes the
-Mortimus application ready, the generic policy can rank and admit it like any
+The scheduling policy does not detect smoke or choose an AI model. When SAGE
+makes the Mortimus application ready, the policy can rank and admit it like any
 other SAGE workload. The repository prepares this integration boundary, but it
 does not contain an end-to-end Mortimus deployment.
 
@@ -107,17 +108,17 @@ publication:
 *Conceptual system context. Solid lines represent physically linked components;
 dotted lines represent distant request or image exchange.*
 
-In this design, the scheduler remains the reusable selection layer. The
+In this design, the scheduling policy remains application-agnostic. The
 companion [SAGE Meshtastic project](https://github.com/dMac716/sage-dev-meshtastic)
 explores the low-bandwidth control and verdict path rather than embedding that
-transport in the scheduler.
+transport in the scheduling policy.
 
 The repository also includes an optional paired-camera core for a primary and
 an additional HaLow image source. It correlates the captures and validates
 time, pose, size, and transfer integrity before calling an injected analyzer.
-This is an optional application feature, not a scheduler requirement. Camera
-drivers, MQTT/Meshtastic adapters, storage, AI models, and Beehive publication
-remain separate integration work.
+This is an optional application feature, not a scheduling-policy requirement.
+Camera drivers, MQTT/Meshtastic adapters, storage, AI models, and Beehive
+publication remain separate integration work.
 
 ## Concepts in more detail
 
@@ -177,13 +178,52 @@ the concurrency limit and remains eligible to run later.
 
 ## Current status and next validation
 
-The scheduler is tested offline and the SAGE integration is prepared, but it
-has not been deployed on a SAGE node. Resource fitting remains off by default
-until SAGE supplies trustworthy capacity data, and upstream queue identity and
-snapshot issues must be resolved before a canary.
+The policy engine is tested offline and the SAGE integration is prepared, but
+it has not been deployed on a SAGE node. Resource fitting remains off by
+default until SAGE supplies trustworthy capacity data, and upstream queue
+identity and snapshot issues must be resolved before a canary.
 
-The validation direction is replay, KWOK or k3s integration, SAGE shadow mode,
-and then a controlled Mortimus canary.
+The validation direction is policy replay, KWOK control-plane scenarios, k3s
+execution tests, SAGE shadow mode, and then a controlled Mortimus canary.
+
+## Sources and research directions
+
+The first group documents the interfaces and test tools used by the repository.
+The remaining papers motivate the design or identify research directions. A
+citation does not mean that prediction, preemption, migration, model adaptation,
+or edge-to-cloud reconfiguration is implemented here.
+
+### Current interfaces and validation
+
+| Source | Use in this project |
+|---|---|
+| [Waggle edge-scheduler](https://github.com/waggle-sensor/edge-scheduler), the pinned [NodeScheduler policy interface](https://github.com/waggle-sensor/edge-scheduler/tree/5391a00b34fa069f14b4ce50153725571007b5ef/pkg/nodescheduler/policy), and its upstream [`policy` selector](https://github.com/waggle-sensor/edge-scheduler/blob/5391a00b34fa069f14b4ce50153725571007b5ef/cmd/nodescheduler/main.go#L46) | This is the implemented integration seam. Upstream selects a registered, compiled Go policy. This repository's replacement binary compiles and injects its adapter and accepts only `-policy resilient-urgent`; other languages require an explicit bridge. |
+| [Kubernetes Scheduler](https://kubernetes.io/docs/concepts/scheduling-eviction/kube-scheduler/) and its [Scheduling Framework](https://kubernetes.io/docs/concepts/scheduling-eviction/scheduling-framework/) | Kubernetes filters feasible nodes and scores them using configured plugins and constraints. A custom plugin or separate scheduler is a possible alternative, but the current scheduling policy acts earlier, when SAGE selects an application. |
+| [KWOK](https://kwok.sigs.k8s.io/) and its [scheduling test scenarios](https://kwok.sigs.k8s.io/docs/examples/scheduling/) | KWOK can exercise Kubernetes objects, placement rules, priority, and control-plane transitions at scale. It does not run the real containers or validate inference latency, GPU behavior, sensors, networks, or physical failures. |
+
+### Research foundations
+
+| Publication | Why it matters here |
+|---|---|
+| Leong and Kranzlmüller, [*Towards a General Definition of Urgent Computing* (2015)](https://doi.org/10.1016/j.procs.2015.05.402) | Grounds the central requirement: computation must start promptly and finish before its result can no longer support mitigation. |
+| Dazzi et al., [*Urgent Edge Computing* (2024)](https://doi.org/10.1145/3659994.3660315) | Connects urgent computing with sensing at the edge, heterogeneous resources, latency, availability, and decentralization. |
+| Kim et al., [*Goal-driven scheduling model in edge computing for smart city applications* (2022)](https://doi.org/10.1016/j.jpdc.2022.04.024) | The closest SAGE foundation: science goals, context-aware decisions, and a two-layer cloud/edge scheduling model. |
+| Kim et al., [*Towards Adaptive Resource Management and Control on Edge Platform for AI Applications* (2023)](https://doi.org/10.5281/zenodo.10311026) | Motivates a generic application–scheduler contract in which applications expose metrics and control points without placing application logic inside the scheduler. |
+| Collis et al., [*Introducing Sage: Cyberinfrastructure for Sensing at the Edge* (2020)](https://doi.org/10.5194/egusphere-egu2020-12320) | Provides the SAGE platform context: multi-tenant, multi-task sensing, edge machine learning, and early wildfire detection among the motivating workloads. |
+| Balouek-Thomert, Rodero, and Parashar, [*Harnessing the Computing Continuum for Urgent Science* (2020)](https://doi.org/10.1145/3439602.3439618) | Frames time-critical scientific workflows across edge and cloud resources; it informs the wider direction beyond this node-level scheduling policy. |
+| Balouek-Thomert, Rodero, and Parashar, [*Evaluating Policy-Driven Adaptation on the Edge-to-Cloud Continuum* (2021)](https://doi.org/10.1109/UrgentHPC54802.2021.00007) | Supports explicit policies and trade-offs among deadlines, resources, response time, and result quality. The current implementation ranks and admits tasks; it does not reconfigure the continuum. |
+| Čyras et al., [*Argumentation for Explainable Scheduling* (2019)](https://doi.org/10.1609/aaai.v33i01.33012752) | Reinforces the need to explain scheduling decisions. This project emits deterministic reason codes; it does not implement the paper's argumentation framework. |
+
+### Future research
+
+| Publication or lead | Possible extension, not a current feature |
+|---|---|
+| Balouek and Coullon, [*Dynamic Adaptation of Urgent Applications in the Edge-to-Cloud Continuum* (2024)](https://doi.org/10.1007/978-3-031-50684-0_15) | Adapt application structure or placement when meeting both time and confidence objectives requires more than queue ranking. |
+| Abrahamson, Kim, Park, and Wei, [*Distributed Edge Computing Task Allocation with Network Effects* (2026 preprint)](https://arxiv.org/abs/2602.13514) | Studies heterogeneous SAGE nodes, time-varying quality-of-service needs, changing node capabilities, and distributed task allocation. |
+| Kim and Matson, [*A Realistic Decision Making for Task Allocation in Heterogeneous Multi-agent Systems* (2016)](https://doi.org/10.1016/j.procs.2016.08.059) | Offers an earlier load-aware task-acceptance approach for heterogeneous allocation. |
+| Hilman, Rodriguez, and Buyya, [*Task Runtime Prediction in Scientific Workflows Using an Online Incremental Learning Approach* (2018)](https://doi.org/10.1109/UCC.2018.00018) | Suggests how runtime estimates could eventually be learned from observations. The current policy only consumes a supplied estimate. |
+| Yao et al., [*Scheduling Real-time Deep Learning Services as Imprecise Computations* (2020)](https://doi.org/10.1109/RTCSA50079.2020.9203676) | Explores trading optional inference work and output quality against deadlines. The current policy does not alter models, layers, or inference quality. |
+| [Michael Wooldridge's publication lead](https://scholar.google.com/citations?user=JD8v9fkAAAAJ&hl=en&oi=sra), including Fatima and Wooldridge's [*Adaptive task resources allocation in multi-agent systems* (2001)](https://doi.org/10.1145/375735.376439) and Schut and Wooldridge's [*The Control of Reasoning in Resource-Bounded Agents*](https://doi.org/10.1017/S0269888901000157) | Provides verified related work on time-constrained allocation under changing load and on balancing decision quality against computation time. The particular predictive scheduler paper originally recalled has not been identified. |
 
 ## Learn more
 
