@@ -181,10 +181,17 @@ the concurrency limit and remains eligible to run later.
 The policy engine is tested offline and the SAGE integration is prepared, but
 it has not been deployed on a SAGE node. Resource fitting remains off by
 default until SAGE supplies trustworthy capacity data, and upstream queue
-identity and snapshot issues must be resolved before a canary.
+identity and snapshot issues must be resolved before deployment.
 
 The validation direction is policy replay, KWOK control-plane scenarios, k3s
-execution tests, SAGE shadow mode, and then a controlled Mortimus canary.
+execution tests, SAGE shadow mode, and then a controlled Mortimus deployment.
+
+## Artifacts of accomplishments
+
+- [Project explanation PDF](https://github.com/NunesClement/sage-summer-camp-2026/blob/main/orchestrator/output/pdf/sage-resilient-urgent-scheduler-explanation.pdf)
+- [Repository guide PDF](https://github.com/NunesClement/sage-summer-camp-2026/blob/main/orchestrator/output/pdf/sage-resilient-urgent-scheduler-repository-guide.pdf)
+- [Chaos sensitivity experiment](https://github.com/NunesClement/sage-summer-camp-2026/blob/main/orchestrator/examples/chaos/sensitivity.json)
+- [Classroom notes and workshop tutorial](https://github.com/NunesClement/sage-summer-camp-2026/blob/main/classroom-notes.md)
 
 ## Sources and research directions
 
@@ -213,17 +220,6 @@ or edge-to-cloud reconfiguration is implemented here.
 | Balouek-Thomert, Rodero, and Parashar, [*Harnessing the Computing Continuum for Urgent Science* (2020)](https://doi.org/10.1145/3439602.3439618) | Frames time-critical scientific workflows across edge and cloud resources; it informs the wider direction beyond this node-level scheduling policy. |
 | Balouek-Thomert, Rodero, and Parashar, [*Evaluating Policy-Driven Adaptation on the Edge-to-Cloud Continuum* (2021)](https://doi.org/10.1109/UrgentHPC54802.2021.00007) | Supports explicit policies and trade-offs among deadlines, resources, response time, and result quality. The current implementation ranks and admits tasks; it does not reconfigure the continuum. |
 | Čyras et al., [*Argumentation for Explainable Scheduling* (2019)](https://doi.org/10.1609/aaai.v33i01.33012752) | Reinforces the need to explain scheduling decisions. This project emits deterministic reason codes; it does not implement the paper's argumentation framework. |
-
-### Future research
-
-| Publication or lead | Possible extension, not a current feature |
-|---|---|
-| Balouek and Coullon, [*Dynamic Adaptation of Urgent Applications in the Edge-to-Cloud Continuum* (2024)](https://doi.org/10.1007/978-3-031-50684-0_15) | Adapt application structure or placement when meeting both time and confidence objectives requires more than queue ranking. |
-| Abrahamson, Kim, Park, and Wei, [*Distributed Edge Computing Task Allocation with Network Effects* (2026 preprint)](https://arxiv.org/abs/2602.13514) | Studies heterogeneous SAGE nodes, time-varying quality-of-service needs, changing node capabilities, and distributed task allocation. |
-| Kim and Matson, [*A Realistic Decision Making for Task Allocation in Heterogeneous Multi-agent Systems* (2016)](https://doi.org/10.1016/j.procs.2016.08.059) | Offers an earlier load-aware task-acceptance approach for heterogeneous allocation. |
-| Hilman, Rodriguez, and Buyya, [*Task Runtime Prediction in Scientific Workflows Using an Online Incremental Learning Approach* (2018)](https://doi.org/10.1109/UCC.2018.00018) | Suggests how runtime estimates could eventually be learned from observations. The current policy only consumes a supplied estimate. |
-| Yao et al., [*Scheduling Real-time Deep Learning Services as Imprecise Computations* (2020)](https://doi.org/10.1109/RTCSA50079.2020.9203676) | Explores trading optional inference work and output quality against deadlines. The current policy does not alter models, layers, or inference quality. |
-| [Michael Wooldridge's publication lead](https://scholar.google.com/citations?user=JD8v9fkAAAAJ&hl=en&oi=sra), including Fatima and Wooldridge's [*Adaptive task resources allocation in multi-agent systems* (2001)](https://doi.org/10.1145/375735.376439) and Schut and Wooldridge's [*The Control of Reasoning in Resource-Bounded Agents*](https://doi.org/10.1017/S0269888901000157) | Provides verified related work on time-constrained allocation under changing load and on balancing decision quality against computation time. The particular predictive scheduler paper originally recalled has not been identified. |
 
 ## Learn more
 
